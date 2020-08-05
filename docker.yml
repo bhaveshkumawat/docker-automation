@@ -1,0 +1,45 @@
+- name: setting up docker and httpd server in container
+  hosts: all
+  vars_prompt:
+   - name: os
+     prompt: "enter name of your os"
+     private: no 
+  tasks: 
+  - name: add repository
+    yum_repository: 
+       name: docker
+       description: docker repo
+       baseurl: https://download.docker.com/linux/centos/7/x86_64/stable/
+       gpgcheck: 0
+  - name: installing docker
+    package: 
+       name: "docker-ce-18.09.1-3.el7.x86_64"
+       state: "present"
+  - name: starting services of docker
+    service: 
+       name: "docker"
+       state: "started"
+  - name: installing docker sdk 
+    command: pip3 install docker
+    register: x
+#  - debug: 
+#       var: x
+  - name: pull an image
+    docker_image: 
+       name: "{{ os }}"
+       source: pull
+  - name: creating folder in httpd bash
+    file:
+       path: /myweb
+       state: directory
+  - name: Copying html file to controller node
+    copy:
+       src: "index.html"
+       dest: "/myweb/"
+  - name: creating a container
+    docker_container:
+       name: "os1"
+       image: "{{ os }}"
+       state: started
+       exposed_ports: "80"
+       volumes: "/myweb:/usr/local/apache2/htdocs" 
